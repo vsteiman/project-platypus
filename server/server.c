@@ -17,7 +17,7 @@ main()
 {
 
   int server_sockfd, client_sockfd, socks[ 16 ], die();
-  char request[ 80 ];
+	char msg[1024] = "";
   struct sockaddr_in server = { AF_INET, PORT, INADDR_ANY };
   fd_set readfds, testfds;
   
@@ -43,6 +43,7 @@ main()
     int nread, fd;
     testfds = readfds;
     select( FD_SETSIZE, &testfds, NULL, NULL, NULL);
+		
     for ( fd = 0; fd < FD_SETSIZE; fd++ ) {
       if ( FD_ISSET( fd, &testfds ) ) {
         if ( fd == server_sockfd ) {
@@ -60,9 +61,10 @@ main()
           if( nread == 0 ) {
             // assume the client is disconnecting
           } else {
-            //  read the client's message
-            //  this could include: 
-            // movement, item activity, chat messages etc.
+            nread = read( fd, msg, nread );
+						msg[ nread ] = '\0';
+						printf( "%s\n", msg );
+						fflush( stdout );
           }
         }
       }

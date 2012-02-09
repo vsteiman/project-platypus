@@ -25,7 +25,7 @@ ${DIST_DIR}:
 server: ${DIST_DIR}
 	@@echo "Building " ${SERVER_DIST}
 	@@cp -r ${SERVER_DIR} ${SERVER_DIST}
-	@@cc ${SERVER_SRC} -o ${SERVER_DIST}/server
+	@@cc ${SERVER_DIST}/server.c -o ${SERVER_DIST}/server
 
 ${SERVER_DIST}: ${SERVER_SRC} ${DIST_DIR}
 	@@echo "Building" ${SERVER_DIST}
@@ -34,8 +34,8 @@ ${SERVER_DIST}: ${SERVER_SRC} ${DIST_DIR}
 client: ${DIST_DIR}
 	@@echo "Building " ${NCURSES_CLIENT_DIST}
 	@@cp -r ${NCURSES_CLIENT_DIR} ${NCURSES_CLIENT_DIST}
-	@@$(call set_ip, ${NCURSES_CLIENT_SRC})
-	@@cc ${NCURSES_CLIENT_SRC} -lncurses -o ${NCURSES_CLIENT_DIST}/client
+	@@$(call set_ip, ${NCURSES_CLIENT_DIST}/client.c)
+	@@cc ${NCURSES_CLIENT_DIST}/client.c -lncurses -o ${NCURSES_CLIENT_DIST}/client
 
 all: server client
 

@@ -12,7 +12,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define IP "127.0.0.1"
+#define IPADDRESS "@IPADDR"
 #define PORT 9000
 #define SIZE sizeof(struct sockaddr_in)
 
@@ -23,7 +23,7 @@ main() {
   
   struct sockaddr_in server = { AF_INET, PORT };
 
-   server.sin_addr.s_addr = inet_addr( IP );
+   server.sin_addr.s_addr = inet_addr( IPADDRESS );
    if( ( sockfd = socket( AF_INET, SOCK_STREAM, 0 ) ) == -1 ) {
       perror( "socket call failed" );
       exit( 1 );
@@ -52,29 +52,30 @@ main() {
           c = getch();
           switch ( c ) {
             case KEY_DOWN:
+							write(sockfd, "KEY_DOWN PRESSED", 17);
               if ( stdscr->_cury < LINES-3 ) {
                 stdscr->_cury++;
-                addch('X');
+                //addch('X');
               }
               break;
             case KEY_UP:
-              //write(sockfd, "KEY_UP PRESSED", 15);
+              write(sockfd, "KEY_UP PRESSED", 15);
               if ( !( stdscr->_cury < 2) ) {
                 stdscr->_cury--;
-                addch('X');
+                //addch('X');
               } 
               break;
             case KEY_LEFT:
-              //write(sockfd, "KEY_LEFT PRESSED", 17);
+              write(sockfd, "KEY_LEFT PRESSED", 17);
               if ( !( stdscr->_curx < 2) ) {
                 stdscr->_curx--;
               }
               break;
             case KEY_RIGHT:
-              //write(sockfd, "KEY_RIGHT PRESSED", 18);
+              write(sockfd, "KEY_RIGHT PRESSED", 18);
               if ( !( stdscr->_curx > COLS-3) ) {
                 stdscr->_curx++;
-                addch('X');
+                //addch('X');
               }
               break;
           }
@@ -96,12 +97,7 @@ initCurses()
   crmode();
   noecho();
   nonl();
-  curs_set(0);
-  /*for (;;) {
-  drawScreen();  
-  update();
-  usleep(1000);
-  }*/
+  curs_set(1);
 }
 
 die() {
