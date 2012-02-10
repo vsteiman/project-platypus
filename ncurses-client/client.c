@@ -13,11 +13,15 @@
 #include <fcntl.h>
 
 #define IPADDRESS "@IPADDR"
-#define PORT 9000
+#define PORT @PORT
 #define SIZE sizeof(struct sockaddr_in)
 
+struct character {
+	int x, y;
+}
+
 main() {
-  int sockfd, result, fd, c;
+  int sockfd, result, fd, ch;
   char message[BUFSIZ];
   fd_set readfds, testfds;
   
@@ -34,10 +38,12 @@ main() {
    }
    
   initCurses();
+
+	struct character *c = ( struct character* )malloc(sizeof( struct character ) );
+
+	c->x = c->y = 2;
   
-  box(stdscr,'|','-');
-  move( 10,10);
-  refresh();
+  drawScreen(c->x, c->y);
 
   FD_ZERO(&readfds);
   FD_SET(sockfd, &readfds);
@@ -49,38 +55,34 @@ main() {
     for (fd = 0; fd < 4; fd++) {
       if (FD_ISSET(fd, &testfds)) {
         if (fd == 0)  {
-          c = getch();
-          switch ( c ) {
+          ch = getch();
+          switch ( ch ) {
             case KEY_DOWN:
 							write(sockfd, "KEY_DOWN PRESSED", 17);
-              if ( stdscr->_cury < LINES-3 ) {
-                stdscr->_cury++;
-                //addch('X');
+              if ( c->y < LINES-2 ) {
+                c->y++;
               }
               break;
             case KEY_UP:
               write(sockfd, "KEY_UP PRESSED", 15);
-              if ( !( stdscr->_cury < 2) ) {
-                stdscr->_cury--;
-                //addch('X');
+              if ( c->y > 1 ) {
+                c->y--;
               } 
               break;
             case KEY_LEFT:
               write(sockfd, "KEY_LEFT PRESSED", 17);
-              if ( !( stdscr->_curx < 2) ) {
-                stdscr->_curx--;
+              if ( c->x > 2 ) {
+                c->x--;
               }
               break;
             case KEY_RIGHT:
               write(sockfd, "KEY_RIGHT PRESSED", 18);
-              if ( !( stdscr->_curx > COLS-3) ) {
-                stdscr->_curx++;
-                //addch('X');
+              if ( c->x < COLS-2) {
+                c->x++;
               }
               break;
           }
-          refresh();
-          
+          drawScreen(c->x, c->y);
         }
       }
     }
@@ -97,7 +99,7 @@ initCurses()
   crmode();
   noecho();
   nonl();
-  curs_set(1);
+  curs_set(0);
 }
 
 die() {
@@ -124,8 +126,13 @@ getInput()
     } 
 }
 
-drawScreen() {
+drawScreen( int x, int y ) {
+	if( !x || !y )
+		return;
+	clear();
+	move( y, x);
+	addch('X');	
   box(stdscr,'|','-');
-  mvaddstr(0,2," Project Platypus ");
+  refresh();
 }
 

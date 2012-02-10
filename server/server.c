@@ -11,7 +11,7 @@
 #include <string.h>
 
 #define SIZE sizeof(struct sockaddr_in)
-#define PORT 9000
+#define PORT @PORT
 
 main()
 {
