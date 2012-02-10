@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "global.h"
 #define SIZE sizeof(struct sockaddr_in)
 #define PORT @PORT
 
@@ -38,9 +39,10 @@ main()
   
   FD_ZERO( &readfds );
   FD_SET( server_sockfd, &readfds );
+	FD_SET(STDIN_FILENO, &readfds);
   printf( "Server started. Waiting for connections...\n" );
   while( 1 ) {
-    int nread, fd;
+    int nread, fd, fd2;
     testfds = readfds;
     select( FD_SETSIZE, &testfds, NULL, NULL, NULL);
 		
@@ -50,16 +52,28 @@ main()
           printf( "accepting client...\n" );
           client_sockfd = accept(server_sockfd, NULL, NULL);
           FD_SET(client_sockfd, &readfds);
-          printf( "client has connected\n" );
+					snprintf( msg, 5, "%d\0", client_sockfd );
+          printf( "client has connected on fd#: %s\n", msg );
         } else if ( fd == STDIN_FILENO ) {
           //admin keyboard activity
+					ioctl( fd, FIONREAD, &nread );
+					printf("nread = %d\n", nread);
+					if( nread > 0 ) {
+						nread = read( fd, msg, nread );
+						msg[nread] ='\0';
+						for (fd2 = 4; fd2 < FD_SETSIZE; fd2++)
+              if (FD_ISSET(fd2, &readfds))
+                write(fd2, msg, nread);
+					}
         
         } else {
-          // this checks how many bytes are immediately available to be read
           ioctl( fd, FIONREAD, &nread );
           
           if( nread == 0 ) {
-            // assume the client is disconnecting
+						close(fd);
+            FD_CLR(fd, &readfds);
+            printf( "Client %d disconnected\n", fd );
+						fflush(stdout);
           } else {
             nread = read( fd, msg, nread );
 						msg[ nread ] = '\0';

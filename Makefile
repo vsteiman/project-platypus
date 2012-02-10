@@ -17,35 +17,39 @@ set_ip = cat $(1) | sed -e 's/@IPADDR/${IPADDR}/' > $(1).__tmp__ ; \
 set_port = cat $(1) | sed -e 's/@PORT/${PORT}/' > $(1).__tmp__ ; \
                     mv $(1).__tmp__ $(1)
 
-# server
-SERVER_DIST = ${DIST_DIR}/server
-
-# client
-NCURSES_CLIENT_DIST = ${DIST_DIR}/ncurses-client
-
 # source files
 SERVER_SRC = ${SERVER_DIR}/server.c
-NCURSES_CLIENT_SRC = ${NCURSES_CLIENT_DIR}/client.c
+NCURSES_CLIENT_SRC = ${NCURSES_CLIENT_DIR}/nclient.cpp
+GLOBAL_H = ${PREFIX}/global.h
+NCURSES_CLIENT_H = ${NCURSES_CLIENT_DIR}/nclient.h
+
+# Destinations
+SERVER_SRC_DEST = ${DIST_DIR}/server.c
+NCURSES_CLIENT_SRC_DEST = ${DIST_DIR}/nclient.cpp
+GLOBAL_H_DEST = ${DIST_DIR}/global.h
+NCURSES_CLIENT_H_DEST = ${DIST_DIR}/nclient.h
+
+# Binaries
+SERVER_BIN = ${DIST_DIR}/s
+NCLIENT_BIN = ${DIST_DIR}/nc
 
 ${DIST_DIR}:
 	@@mkdir -p ${DIST_DIR}
 
 server: ${DIST_DIR}
-	@@echo "Building " ${SERVER_DIST}
-	@@cp -r ${SERVER_DIR} ${SERVER_DIST}
-	@@$(call set_port, ${SERVER_DIST}/server.c)
-	@@cc ${SERVER_DIST}/server.c -o ${DIST_DIR}/s
-
-${SERVER_DIST}: ${SERVER_SRC} ${DIST_DIR}
-	@@echo "Building" ${SERVER_DIST}
-	@@cat ${SERVER_SRC} ${SERVER_DIST}
+	@@echo "Building Server"
+	@@cp -r ${SERVER_SRC} ${SERVER_SRC_DEST}
+	@@cp -r ${GLOBAL_H} ${GLOBAL_H_DEST}
+	@@$(call set_port, ${SERVER_SRC_DEST})
+	@@gcc ${SERVER_SRC_DEST} -o ${SERVER_BIN}
 
 client: ${DIST_DIR}
-	@@echo "Building " ${NCURSES_CLIENT_DIST}
-	@@cp -r ${NCURSES_CLIENT_DIR} ${NCURSES_CLIENT_DIST}
-	@@$(call set_ip, ${NCURSES_CLIENT_DIST}/client.c)
-	@@$(call set_port, ${NCURSES_CLIENT_DIST}/client.c)
-	@@cc ${NCURSES_CLIENT_DIST}/client.c -lncurses -o ${DIST_DIR}/nc
+	@@echo "Building Client"
+	@@cp -r ${NCURSES_CLIENT_SRC} ${NCURSES_CLIENT_SRC_DEST}
+	@@cp -r ${NCURSES_CLIENT_H} ${NCURSES_CLIENT_H_DEST}
+	@@$(call set_ip, ${NCURSES_CLIENT_SRC_DEST})
+	@@$(call set_port, ${NCURSES_CLIENT_SRC_DEST})
+	@@c++ ${NCURSES_CLIENT_SRC_DEST} -lncurses -o ${NCLIENT_BIN}
 
 all: clean server client
 

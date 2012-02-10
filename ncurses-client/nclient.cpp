@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -12,17 +13,20 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "global.h"
+#include "nclient.h"
+
 #define IPADDRESS "@IPADDR"
 #define PORT @PORT
 #define SIZE sizeof(struct sockaddr_in)
+#define CHATSIZE 15 
 
-struct character {
-	int x, y;
-}
+void initCurses();
+void drawScreen( int, int );
 
 main() {
-  int sockfd, result, fd, ch;
-  char message[BUFSIZ];
+  int sockfd, result, fd, ch, nread;
+  char message[1024];
   fd_set readfds, testfds;
   
   struct sockaddr_in server = { AF_INET, PORT };
@@ -42,8 +46,12 @@ main() {
 	struct character *c = ( struct character* )malloc(sizeof( struct character ) );
 
 	c->x = c->y = 2;
+
+	ChatWindow *cw = new ChatWindow( LINES - (CHATSIZE+2), 5);
   
   drawScreen(c->x, c->y);
+	cw->draw();
+	refresh();
 
   FD_ZERO(&readfds);
   FD_SET(sockfd, &readfds);
@@ -59,7 +67,7 @@ main() {
           switch ( ch ) {
             case KEY_DOWN:
 							write(sockfd, "KEY_DOWN PRESSED", 17);
-              if ( c->y < LINES-2 ) {
+              if ( c->y < ( LINES - CHATSIZE ) - 3 ) {
                 c->y++;
               }
               break;
@@ -82,14 +90,30 @@ main() {
               }
               break;
           }
+					clear();
+					cw->draw();
           drawScreen(c->x, c->y);
-        }
+  				refresh();
+        } else {
+					ioctl( fd, FIONREAD, &nread );
+
+					if( nread == 0 )
+						exit(0);
+
+					nread = read( fd, message, nread );
+					message[nread] = '\0';
+
+					cw->addMessage( message, (char *)"admin" );
+					cw->draw();
+					drawScreen(c->x, c->y);					
+  				refresh();
+				}
       }
     }
   }
 }
 
-initCurses()
+void initCurses()
 {
   int die();
   initscr();
@@ -102,37 +126,25 @@ initCurses()
   curs_set(0);
 }
 
-die() {
+int die() {
   signal(SIGINT,SIG_IGN);
   mvcur(0,COLS-1,LINES-1,0);
   endwin();
   exit(0);
 }
 
-getInput() 
-{
-  int c,x,y,ch;
-
-  move(1,1);
-  do {
-
-    
-  } while(1);
-  for (y = 1; y < LINES-1; y++)
-    for (x = 1; x < COLS-1; x++) {
-         move(y,x);
-   ch=inch() & A_CHARTEXT;
-         if (ch == 'x') addlist(y,x);
-    } 
-}
-
-drawScreen( int x, int y ) {
+void drawScreen( int x, int y ) {
 	if( !x || !y )
 		return;
-	clear();
-	move( y, x);
-	addch('X');	
-  box(stdscr,'|','-');
-  refresh();
+	move( y, x );
+	addch( 'X' );
+
+	box( stdscr, '|', '-' );
+
+	move( LINES - CHATSIZE - 2, 0 );
+	addch( ACS_LTEE );
+
+	move( LINES - CHATSIZE - 2, COLS -1 );
+	addch( ACS_RTEE );
 }
 
