@@ -92,6 +92,15 @@ main() {
                 c->x++;
               }
               break;
+            case 0x63:
+            case 0x43:
+              mvprintw( LINES - 2, 1, ">" );
+              curs_set(1);
+              echo();
+              getstr( message );
+              curs_set(0);
+              noecho();
+              break;
           }
           clear();
           cw->draw();
