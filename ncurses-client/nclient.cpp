@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <string>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -12,6 +13,8 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
+using namespace std;
 
 #include "global.h"
 #include "nclient.h"
@@ -47,7 +50,7 @@ main() {
 
   c->x = c->y = 2;
 
-  ChatWindow *cw = new ChatWindow( LINES - (CHATSIZE+2), 5);
+  ChatWindow *cw = new ChatWindow( LINES - (CHATSIZE+2), CHATSIZE - 2);
 
   drawScreen(c->x, c->y);
   cw->draw();
@@ -66,25 +69,25 @@ main() {
           ch = getch();
           switch ( ch ) {
             case KEY_DOWN:
-              write(sockfd, "KEY_DOWN PRESSED", 17);
+              //write(sockfd, "KEY_DOWN PRESSED", 17);
               if ( c->y < ( LINES - CHATSIZE ) - 3 ) {
                 c->y++;
               }
               break;
             case KEY_UP:
-              write(sockfd, "KEY_UP PRESSED", 15);
+              //write(sockfd, "KEY_UP PRESSED", 15);
               if ( c->y > 1 ) {
                 c->y--;
               }
               break;
             case KEY_LEFT:
-              write(sockfd, "KEY_LEFT PRESSED", 17);
+              //write(sockfd, "KEY_LEFT PRESSED", 17);
               if ( c->x > 2 ) {
                 c->x--;
               }
               break;
             case KEY_RIGHT:
-              write(sockfd, "KEY_RIGHT PRESSED", 18);
+              //write(sockfd, "KEY_RIGHT PRESSED", 18);
               if ( c->x < COLS-2) {
                 c->x++;
               }

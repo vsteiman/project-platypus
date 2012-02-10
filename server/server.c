@@ -57,13 +57,14 @@ main()
         } else if ( fd == STDIN_FILENO ) {
           //admin keyboard activity
           ioctl( fd, FIONREAD, &nread );
-          printf("nread = %d\n", nread);
           if( nread > 0 ) {
             nread = read( fd, msg, nread );
-            msg[nread] ='\0';
-            for (fd2 = 4; fd2 < FD_SETSIZE; fd2++)
-              if (FD_ISSET(fd2, &readfds))
-                write(fd2, msg, nread);
+            if ( msg[0] != '\n' ) {
+              msg[nread] ='\0';
+              for (fd2 = 4; fd2 < FD_SETSIZE; fd2++)
+                if (FD_ISSET(fd2, &readfds))
+                  write(fd2, msg, nread);
+            }
           }
         } else {
           ioctl( fd, FIONREAD, &nread );

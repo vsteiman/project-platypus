@@ -1,15 +1,23 @@
-struct chatmsg {
-  char msg[1024];
-  struct chatmsg *next;
-  struct chatmsg *prev;
+class Chatmsg {
+  public:
+    string msg;
+    Chatmsg *next;
+    Chatmsg *prev;
+    Chatmsg( string );
 };
+
+Chatmsg::Chatmsg( string message ):
+  msg( message ),
+  next( NULL ),
+  prev( NULL )
+{};
 
 class ChatWindow {
   private:
     int _ypos;
     int _maxlines;
     int _messages;
-    chatmsg* _lastmsg;
+    Chatmsg* _lastmsg;
 
     void trim();
   public:
@@ -26,16 +34,16 @@ ChatWindow::ChatWindow( int ypos, int vl ):
   _messages( 0 ) {};
 
 ChatWindow::~ChatWindow() {
-  chatmsg *temp;
+  Chatmsg *temp;
   while ( _lastmsg ) {
     temp = _lastmsg->next;
-    free( temp );
+    delete temp;
   }
 };
 
 void ChatWindow::trim(){
   int num = 0;
-  chatmsg *temp = _lastmsg,
+  Chatmsg *temp = _lastmsg,
           *del;
   
   while( temp->next ) {
@@ -43,18 +51,18 @@ void ChatWindow::trim(){
   }
   del = temp;
   temp->prev->next = NULL;
-  free( del );	
+  delete del;	
 }
 
 bool ChatWindow::addMessage( char *message, char* sender ) {
   if( !message || !sender )
     return false;
 
-  chatmsg *temp = (chatmsg*)malloc(sizeof(chatmsg));
+  string tempStr = string( sender );
+  tempStr.append( ": " );
+  tempStr.append( message );
 
-  strcat( temp->msg, sender );
-  strcat( temp->msg, ": " );
-  strcat( temp->msg, message);
+  Chatmsg *temp = new Chatmsg( tempStr );
 
   if ( _lastmsg ) {
     temp->next = _lastmsg;
@@ -76,9 +84,9 @@ void ChatWindow::draw() {
   hline( '-', COLS-2 );
  	move( LINES - 3, 1);
   hline( '-', COLS-2 );
-  chatmsg *temp = _lastmsg;
+  Chatmsg *temp = _lastmsg;
   while( temp ) {
-    mvaddstr( pos--, 2, temp->msg );
+    mvaddstr( pos--, 2, temp->msg.c_str() );
     temp = temp->next;
   }
 };
