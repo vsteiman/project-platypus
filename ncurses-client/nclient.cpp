@@ -28,7 +28,7 @@ main() {
   int sockfd, result, fd, ch, nread;
   char message[1024];
   fd_set readfds, testfds;
-  
+
   struct sockaddr_in server = { AF_INET, PORT };
 
    server.sin_addr.s_addr = inet_addr( IPADDRESS );
@@ -40,18 +40,18 @@ main() {
       perror( "connect call failed" );
       exit( 1 );
    }
-   
+
   initCurses();
 
-	struct character *c = ( struct character* )malloc(sizeof( struct character ) );
+  struct character *c = ( struct character* )malloc(sizeof( struct character ) );
 
-	c->x = c->y = 2;
+  c->x = c->y = 2;
 
-	ChatWindow *cw = new ChatWindow( LINES - (CHATSIZE+2), 5);
-  
+  ChatWindow *cw = new ChatWindow( LINES - (CHATSIZE+2), 5);
+
   drawScreen(c->x, c->y);
-	cw->draw();
-	refresh();
+  cw->draw();
+  refresh();
 
   FD_ZERO(&readfds);
   FD_SET(sockfd, &readfds);
@@ -66,7 +66,7 @@ main() {
           ch = getch();
           switch ( ch ) {
             case KEY_DOWN:
-							write(sockfd, "KEY_DOWN PRESSED", 17);
+              write(sockfd, "KEY_DOWN PRESSED", 17);
               if ( c->y < ( LINES - CHATSIZE ) - 3 ) {
                 c->y++;
               }
@@ -75,7 +75,7 @@ main() {
               write(sockfd, "KEY_UP PRESSED", 15);
               if ( c->y > 1 ) {
                 c->y--;
-              } 
+              }
               break;
             case KEY_LEFT:
               write(sockfd, "KEY_LEFT PRESSED", 17);
@@ -90,24 +90,24 @@ main() {
               }
               break;
           }
-					clear();
-					cw->draw();
+          clear();
+          cw->draw();
           drawScreen(c->x, c->y);
-  				refresh();
+          refresh();
         } else {
-					ioctl( fd, FIONREAD, &nread );
+          ioctl( fd, FIONREAD, &nread );
 
-					if( nread == 0 )
-						exit(0);
+          if( nread == 0 )
+            exit(0);
 
-					nread = read( fd, message, nread );
-					message[nread] = '\0';
+          nread = read( fd, message, nread );
+          message[nread] = '\0';
 
-					cw->addMessage( message, (char *)"admin" );
-					cw->draw();
-					drawScreen(c->x, c->y);					
-  				refresh();
-				}
+          cw->addMessage( message, (char *)"admin" );
+          cw->draw();
+          drawScreen(c->x, c->y);					
+          refresh();
+        }
       }
     }
   }
@@ -134,17 +134,17 @@ int die() {
 }
 
 void drawScreen( int x, int y ) {
-	if( !x || !y )
-		return;
-	move( y, x );
-	addch( 'X' );
+  if( !x || !y )
+    return;
+  move( y, x );
+  addch( 'X' );
 
-	box( stdscr, '|', '-' );
+  box( stdscr, '|', '-' );
 
-	move( LINES - CHATSIZE - 2, 0 );
-	addch( ACS_LTEE );
+  move( LINES - CHATSIZE - 2, 0 );
+  addch( ACS_LTEE );
 
-	move( LINES - CHATSIZE - 2, COLS -1 );
-	addch( ACS_RTEE );
+  move( LINES - CHATSIZE - 2, COLS -1 );
+  addch( ACS_RTEE );
 }
 

@@ -52,11 +52,11 @@ main()
           printf( "accepting client...\n" );
           client_sockfd = accept(server_sockfd, NULL, NULL);
           FD_SET(client_sockfd, &readfds);
-					snprintf( msg, 5, "%d\0", client_sockfd );
+          snprintf( msg, 5, "%d\0", client_sockfd );
           printf( "client has connected on fd#: %s\n", msg );
         } else if ( fd == STDIN_FILENO ) {
           //admin keyboard activity
-					ioctl( fd, FIONREAD, &nread );
+          ioctl( fd, FIONREAD, &nread );
 					printf("nread = %d\n", nread);
 					if( nread > 0 ) {
 						nread = read( fd, msg, nread );
@@ -64,21 +64,19 @@ main()
 						for (fd2 = 4; fd2 < FD_SETSIZE; fd2++)
               if (FD_ISSET(fd2, &readfds))
                 write(fd2, msg, nread);
-					}
-        
+          }
         } else {
           ioctl( fd, FIONREAD, &nread );
-          
           if( nread == 0 ) {
-						close(fd);
+            close(fd);
             FD_CLR(fd, &readfds);
             printf( "Client %d disconnected\n", fd );
-						fflush(stdout);
+            fflush(stdout);
           } else {
             nread = read( fd, msg, nread );
-						msg[ nread ] = '\0';
-						printf( "%s\n", msg );
-						fflush( stdout );
+            msg[ nread ] = '\0';
+            printf( "%s\n", msg );
+            fflush( stdout );
           }
         }
       }

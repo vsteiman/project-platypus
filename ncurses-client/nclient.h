@@ -1,14 +1,14 @@
 struct chatmsg {
   char msg[1024];
   struct chatmsg *next;
-	struct chatmsg *prev;
+  struct chatmsg *prev;
 };
 
 class ChatWindow {
   private:
     int _ypos;
     int _maxlines;
-		int _messages;
+    int _messages;
     chatmsg* _lastmsg;
 
     void trim();
@@ -22,8 +22,8 @@ class ChatWindow {
 ChatWindow::ChatWindow( int ypos, int vl ): 
   _ypos( ypos ),
   _maxlines( vl ),
-	_lastmsg( NULL ),
-	_messages( 0 ) {};
+  _lastmsg( NULL ),
+  _messages( 0 ) {};
 
 ChatWindow::~ChatWindow() {
   chatmsg *temp;
@@ -39,11 +39,11 @@ void ChatWindow::trim(){
           *del;
   
   while( temp->next ) {
-		temp = temp->next;
+    temp = temp->next;
   }
-	del = temp;
-	temp->prev->next = NULL;
-	free( del );	
+  del = temp;
+  temp->prev->next = NULL;
+  free( del );	
 }
 
 bool ChatWindow::addMessage( char *message, char* sender ) {
@@ -56,7 +56,7 @@ bool ChatWindow::addMessage( char *message, char* sender ) {
   strcat( temp->msg, ": " );
   strcat( temp->msg, message);
 
-	if ( _lastmsg ) {
+  if ( _lastmsg ) {
     temp->next = _lastmsg;
     _lastmsg->prev = temp;
   } else {
@@ -64,8 +64,8 @@ bool ChatWindow::addMessage( char *message, char* sender ) {
   }
   temp->prev = NULL;
   _lastmsg = temp;
-	_messages++;
-	if( _messages > _maxlines )
+  _messages++;
+  if( _messages > _maxlines )
   	trim();
   return true;
 };
@@ -81,5 +81,4 @@ void ChatWindow::draw() {
     mvaddstr( pos--, 2, temp->msg );
     temp = temp->next;
   }
-  
 };
