@@ -100,6 +100,7 @@ main() {
               getstr( message );
               curs_set(0);
               noecho();
+              cw->addMessage( message, (char*)"you" );
               break;
           }
           clear();
