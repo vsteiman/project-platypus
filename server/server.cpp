@@ -9,32 +9,35 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <string>
 
 #include "global.h"
 #define SIZE sizeof(struct sockaddr_in)
 #define PORT @PORT
 
+fd_set readfds, testfds;
+
 main()
 {
 
-  int server_sockfd, client_sockfd, socks[ 16 ], die();
+  int server_sockfd, client_sockfd, die();
 	char msg[1024] = "";
   struct sockaddr_in server = { AF_INET, PORT, INADDR_ANY };
-  fd_set readfds, testfds;
+  
   
   signal(SIGINT,(__sighandler_t)die);
 
   if ( ( server_sockfd = socket( AF_INET, SOCK_STREAM, 0 ) ) == -1 ) {
     perror( "socket call failed" );
-    exit( 1 );
+    exit( EXIT_FAILURE );
   }
   if ( bind( server_sockfd, (struct sockaddr *)&server, SIZE ) == -1 ) {
     perror( "bind call failed" );
-    exit( 1 );
+    exit( EXIT_FAILURE );
   }
   if( listen( server_sockfd, 16 ) == -1 ) {
     perror( "listen call failed" );
-    exit( 1 );
+    exit( EXIT_FAILURE );
   }
   
   FD_ZERO( &readfds );
@@ -61,6 +64,7 @@ main()
             nread = read( fd, msg, nread );
             if ( msg[0] != '\n' ) {
               msg[nread] ='\0';
+
               for (fd2 = 4; fd2 < FD_SETSIZE; fd2++)
                 if (FD_ISSET(fd2, &readfds))
                   write(fd2, msg, nread);
@@ -76,7 +80,9 @@ main()
           } else {
             nread = read( fd, msg, nread );
             msg[ nread ] = '\0';
-            printf( "%s\n", msg );
+            for (fd2 = 4; fd2 < FD_SETSIZE; fd2++)
+                if (FD_ISSET(fd2, &readfds) && fd != fd2 )
+                  write(fd2, msg, nread);
             fflush( stdout );
           }
         }
@@ -85,8 +91,14 @@ main()
   }
 }
 
-die() {
+void die() {
+  int fd;
   signal(SIGINT,SIG_IGN);
+  for (fd = 4; fd < FD_SETSIZE; fd++)
+    if (FD_ISSET(fd, &readfds)) {
+      printf( "closing fd#%d", fd );
+      close( fd );
+    }
   close( 3 );
-  exit(0);
+  exit( EXIT_SUCCESS );
 }

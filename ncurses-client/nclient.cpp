@@ -28,18 +28,19 @@ void initCurses();
 void drawScreen( int, int );
 
 main() {
-  int sockfd, result, fd, ch, nread;
-  char message[1024];
+  int server_sock, result, fd, ch, nread;
+  char buffer[1024];
+  string message, username;
   fd_set readfds, testfds;
 
   struct sockaddr_in server = { AF_INET, PORT };
 
    server.sin_addr.s_addr = inet_addr( IPADDRESS );
-   if( ( sockfd = socket( AF_INET, SOCK_STREAM, 0 ) ) == -1 ) {
+   if( ( server_sock = socket( AF_INET, SOCK_STREAM, 0 ) ) == -1 ) {
       perror( "socket call failed" );
       exit( 1 );
    }
-   if( connect( sockfd, ( struct sockaddr * ) &server, SIZE ) == -1 ) {
+   if( connect( server_sock, ( struct sockaddr * ) &server, SIZE ) == -1 ) {
       perror( "connect call failed" );
       exit( 1 );
    }
@@ -54,10 +55,20 @@ main() {
 
   drawScreen(c->x, c->y);
   cw->draw();
+  mvprintw( LINES - 2, 1, "Enter User Name: " );
+  curs_set(1);
+  echo();
+  getstr( buffer );
+  curs_set(0);
+  noecho();
+  username = string( buffer );
+  clear();
+  drawScreen(c->x, c->y);
+  cw->draw();  
   refresh();
 
   FD_ZERO(&readfds);
-  FD_SET(sockfd, &readfds);
+  FD_SET(server_sock, &readfds);
   FD_SET(0, &readfds);
   while (1) {
     testfds = readfds;
@@ -69,38 +80,43 @@ main() {
           ch = getch();
           switch ( ch ) {
             case KEY_DOWN:
-              //write(sockfd, "KEY_DOWN PRESSED", 17);
+              //write(server_sock, "KEY_DOWN PRESSED", 17);
               if ( c->y < ( LINES - CHATSIZE ) - 3 ) {
                 c->y++;
               }
               break;
             case KEY_UP:
-              //write(sockfd, "KEY_UP PRESSED", 15);
+              //write(server_sock, "KEY_UP PRESSED", 15);
               if ( c->y > 1 ) {
                 c->y--;
               }
               break;
             case KEY_LEFT:
-              //write(sockfd, "KEY_LEFT PRESSED", 17);
+              //write(server_sock, "KEY_LEFT PRESSED", 17);
               if ( c->x > 2 ) {
                 c->x--;
               }
               break;
             case KEY_RIGHT:
-              //write(sockfd, "KEY_RIGHT PRESSED", 18);
+              //write(server_sock, "KEY_RIGHT PRESSED", 18);
               if ( c->x < COLS-2) {
                 c->x++;
               }
               break;
             case 0x63:
             case 0x43:
-              mvprintw( LINES - 2, 1, ">" );
+              mvprintw( LINES - 2, 1, username.c_str() );
+              mvprintw( LINES - 2, username.size() + 2, ": " );
               curs_set(1);
               echo();
-              getstr( message );
+              getstr( buffer );
               curs_set(0);
               noecho();
-              cw->addMessage( message, (char*)"you" );
+              message = string( buffer );
+              message.insert( 0, ": " );
+              message.insert( 0, username);
+              write( server_sock, message.c_str(), message.size() );
+              cw->addMessage( message );
               break;
           }
           clear();
@@ -110,13 +126,18 @@ main() {
         } else {
           ioctl( fd, FIONREAD, &nread );
 
-          if( nread == 0 )
+          if( nread == 0 ) {
+            close( fd );
+            mvcur(0,COLS-1,LINES-1,0);
+            endwin();         
             exit(0);
+          }
 
-          nread = read( fd, message, nread );
-          message[nread] = '\0';
+          nread = read( fd, buffer, nread );
+          buffer[nread] = '\0';
 
-          cw->addMessage( message, (char *)"admin" );
+          cw->addMessage( string( buffer ) );
+          clear();
           cw->draw();
           drawScreen(c->x, c->y);					
           refresh();

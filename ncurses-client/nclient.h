@@ -23,7 +23,7 @@ class ChatWindow {
   public:
     ChatWindow( int, int);
     ~ChatWindow();
-    bool addMessage( char*, char*);
+    bool addMessage( string );
     void draw();
 };
 
@@ -54,15 +54,11 @@ void ChatWindow::trim(){
   delete del;	
 }
 
-bool ChatWindow::addMessage( char *message, char* sender ) {
-  if( !message || !sender )
+bool ChatWindow::addMessage( string message ) {
+  if( message.empty() )
     return false;
 
-  string tempStr = string( sender );
-  tempStr.append( ": " );
-  tempStr.append( message );
-
-  Chatmsg *temp = new Chatmsg( tempStr );
+  Chatmsg *temp = new Chatmsg( message );
 
   if ( _lastmsg ) {
     temp->next = _lastmsg;

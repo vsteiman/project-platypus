@@ -18,7 +18,7 @@ set_port = cat $(1) | sed -e 's/@PORT/${PORT}/' > $(1).__tmp__ ; \
                     mv $(1).__tmp__ $(1)
 
 # source files
-SERVER_SRC = ${SERVER_DIR}/server.c
+SERVER_SRC = ${SERVER_DIR}/server.cpp
 NCURSES_CLIENT_SRC = ${NCURSES_CLIENT_DIR}/nclient.cpp
 GLOBAL_H = ${PREFIX}/global.h
 NCURSES_CLIENT_H = ${NCURSES_CLIENT_DIR}/nclient.h
@@ -41,7 +41,7 @@ server: ${DIST_DIR}
 	@@cp -r ${SERVER_SRC} ${SERVER_SRC_DEST}
 	@@cp -r ${GLOBAL_H} ${GLOBAL_H_DEST}
 	@@$(call set_port, ${SERVER_SRC_DEST})
-	@@gcc ${SERVER_SRC_DEST} -o ${SERVER_BIN}
+	@@c++ ${SERVER_SRC_DEST} -o ${SERVER_BIN}
 
 client: ${DIST_DIR}
 	@@echo "Building Client"
