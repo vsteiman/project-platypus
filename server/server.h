@@ -16,9 +16,6 @@ class GameServer {
     int _server_sockfd;
     bool _connected;
 
-    // die needs to be called through a wrapper function if
-    // it is to be used as a signal handler, becuase of security limitations.
-    void die();
     void close_sockets();
     void run_select();
     void disconnect_client( int );
@@ -26,14 +23,19 @@ class GameServer {
     void handle_client( int );
     void handle_new_client();
     void handle_server_stdin();
-  public:
-    GameServer( int );
-    ~GameServer();
     bool broadcast( string );
     bool broadcast( int, string );
     bool parse_message( int, string );
+  public:
+    GameServer();
+    ~GameServer();
+
+    void setPort( int );
     bool connect();
-    void disconnect();
+    bool isConnected();
+    // die needs to be called through a wrapper function if
+    // it is to be used as a signal handler, becuase of security limitations.    
+    void die();
 };
 
 

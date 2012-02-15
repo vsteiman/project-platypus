@@ -19,11 +19,6 @@ using namespace std;
 #include "global.h"
 #include "nclient.h"
 
-#define IPADDRESS "@IPADDR"
-#define PORT @PORT
-#define SIZE sizeof(struct sockaddr_in)
-#define CHATSIZE 15 
-
 void initCurses();
 void drawScreen( int, int );
 
@@ -107,16 +102,19 @@ main() {
             case 0x43:
               mvprintw( LINES - 2, 1, username.c_str() );
               mvprintw( LINES - 2, username.size() + 2, ": " );
+              fflush( stdin );
               curs_set(1);
               echo();
               getstr( buffer );
               curs_set(0);
               noecho();
-              message = string( buffer );
-              message.insert( 0, ": " );
-              message.insert( 0, username);
-              write( server_sock, message.c_str(), message.size() );
-              cw->addMessage( message );
+              if( buffer[0] != '\0' ) {
+                message = string( buffer );
+                message.insert( 0, ": " );
+                message.insert( 0, username);
+                write( server_sock, message.c_str(), message.size() );
+                cw->addMessage( message );
+              }
               break;
           }
           clear();

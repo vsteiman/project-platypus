@@ -6,99 +6,186 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <signal.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <string>
 
+#include "server.h"
 #include "global.h"
-#define SIZE sizeof(struct sockaddr_in)
-#define PORT @PORT
 
-fd_set readfds, testfds;
+GameServer::GameServer(): _connected( false ) { };
 
-main()
-{
+GameServer::~GameServer() {
+  if( _connected )
+    close_sockets();
+};
 
-  int server_sockfd, client_sockfd, die();
-	char msg[1024] = "";
-  struct sockaddr_in server = { AF_INET, PORT, INADDR_ANY };
-  
-  
-  signal(SIGINT,(__sighandler_t)die);
+bool GameServer::connect() {
+  struct sockaddr_in server = { AF_INET, _port, INADDR_ANY };
 
-  if ( ( server_sockfd = socket( AF_INET, SOCK_STREAM, 0 ) ) == -1 ) {
+  if ( ( _server_sockfd = socket( AF_INET, SOCK_STREAM, 0 ) ) == -1 ) {
     perror( "socket call failed" );
-    exit( EXIT_FAILURE );
+    return false;
   }
-  if ( bind( server_sockfd, (struct sockaddr *)&server, SIZE ) == -1 ) {
+  if ( bind( _server_sockfd, (struct sockaddr *)&server, sizeof(struct sockaddr_in) ) == -1 ) {
     perror( "bind call failed" );
-    exit( EXIT_FAILURE );
+    return false;
   }
-  if( listen( server_sockfd, 16 ) == -1 ) {
+  if( listen( _server_sockfd, 16 ) == -1 ) {
     perror( "listen call failed" );
-    exit( EXIT_FAILURE );
+    return false;
   }
-  
-  FD_ZERO( &readfds );
-  FD_SET( server_sockfd, &readfds );
-	FD_SET(STDIN_FILENO, &readfds);
-  printf( "Server started. Waiting for connections...\n" );
-  while( 1 ) {
-    int nread, fd, fd2;
-    testfds = readfds;
-    select( FD_SETSIZE, &testfds, NULL, NULL, NULL);
-		
-    for ( fd = 0; fd < FD_SETSIZE; fd++ ) {
-      if ( FD_ISSET( fd, &testfds ) ) {
-        if ( fd == server_sockfd ) {
-          printf( "accepting client...\n" );
-          client_sockfd = accept(server_sockfd, NULL, NULL);
-          FD_SET(client_sockfd, &readfds);
-          snprintf( msg, 5, "%d\0", client_sockfd );
-          printf( "client has connected on fd#: %s\n", msg );
-        } else if ( fd == STDIN_FILENO ) {
-          //admin keyboard activity
-          ioctl( fd, FIONREAD, &nread );
-          if( nread > 0 ) {
-            nread = read( fd, msg, nread );
-            if ( msg[0] != '\n' ) {
-              msg[nread] ='\0';
 
-              for (fd2 = 4; fd2 < FD_SETSIZE; fd2++)
-                if (FD_ISSET(fd2, &readfds))
-                  write(fd2, msg, nread);
-            }
-          }
-        } else {
-          ioctl( fd, FIONREAD, &nread );
-          if( nread == 0 ) {
-            close(fd);
-            FD_CLR(fd, &readfds);
-            printf( "Client %d disconnected\n", fd );
-            fflush(stdout);
-          } else {
-            nread = read( fd, msg, nread );
-            msg[ nread ] = '\0';
-            for (fd2 = 4; fd2 < FD_SETSIZE; fd2++)
-                if (FD_ISSET(fd2, &readfds) && fd != fd2 )
-                  write(fd2, msg, nread);
-            fflush( stdout );
-          }
-        }
+  FD_ZERO( &_readfds );
+  FD_SET( _server_sockfd, &_readfds );
+  FD_SET( STDIN_FILENO, &_readfds );
+
+  _connected = true;
+
+  log( string( "Server Ready" ) );
+  run_select();
+
+  return true;
+};
+
+void GameServer::run_select() {
+  int fd;  
+  while( _connected ) {
+    _testfds = _readfds;
+    select( 4 + _num_connected, &_testfds, NULL, NULL, NULL );
+    for ( fd = 0; fd < FD_SETSIZE; fd++ ) {
+      if ( FD_ISSET( fd, &_testfds ) ) {
+        if ( fd == _server_sockfd )
+          handle_new_client();
+        else if ( fd == STDIN_FILENO )
+          handle_server_stdin();
+        else
+          handle_client( fd );
       }
     }
   }
+};
+
+void GameServer::handle_client( int sock_num ) {
+  int nread,
+      fd;  
+  ioctl( sock_num, FIONREAD, &nread );
+  if( nread == 0 ) {
+    close( sock_num );
+    FD_CLR( sock_num, &_readfds);
+    sprintf( _msg, "Client %d disconnected\n", sock_num );
+    log( string( _msg ) );
+  } else {
+    nread = read( sock_num, _msg, nread );
+    _msg[ nread ] = '\0';
+    broadcast( sock_num, string( _msg ) );
+  }
+};
+
+void GameServer::handle_new_client() {
+  int new_fd;  
+  log( string( "accepting client...\n" ) );
+  new_fd = accept( _server_sockfd, NULL, NULL );
+  if ( new_fd > 3 ) {
+    FD_SET( new_fd, &_readfds );
+    sprintf( _msg,  "client has connected on fd#: %d\n", new_fd );
+    log( string( _msg ) );
+    _num_connected++;
+  }
+};
+
+void GameServer::handle_server_stdin() {
+  int nread;  
+  ioctl( STDIN_FILENO, FIONREAD, &nread );
+  if( nread > 0 ) {
+    nread = read( STDIN_FILENO, _msg, nread );
+    if ( _msg[ 0 ] != '\n' ) {
+      _msg[ nread ] = '\0';
+      broadcast( string( _msg ) );
+    }
+  }
+};
+
+void GameServer::die() {
+  _connected = false;
+  close_sockets();
+  close( _server_sockfd );
+};
+
+void GameServer::disconnect_client( int client_sock ) {
+  // network-core would be useful here.
+  close( client_sock );  
+  FD_CLR( client_sock, &_readfds );
+  _num_connected--;
+};
+
+void GameServer::close_sockets() {
+  int fd;
+  char b[10];
+  for ( fd = 4; fd < FD_SETSIZE; fd++ ) {
+    sprintf( b, "%d", fd );
+    log( string( b ) );
+    if ( FD_ISSET( fd, &_readfds ) ) {
+      disconnect_client( fd );
+    }
+  }
+};
+
+bool GameServer::broadcast( int targ_fd, string message ) {
+  // will not broadcast to targ_fd (if message originated from targ_fd
+  // use broadcast( string ) to send to all
+  if( targ_fd < 0 || message.empty() ) {
+    return false;
+  }
+  int fd;
+
+  for ( fd = 4; fd < 4 + _num_connected; fd++ ) {
+    if ( FD_ISSET( fd, &_readfds ) && targ_fd != fd ) {
+      //use network-core here :D
+      write(fd, message.c_str(), message.size() );
+    }
+  }
+};
+
+bool GameServer::broadcast( string message ) {
+  // broadcast message to all client fd's
+  broadcast( -1, message );
+};
+
+void GameServer::log( string message ) {
+  if( message.empty() )
+    return;
+
+  printf( "%s\n", message.c_str() );
+};
+
+bool GameServer::parse_message( int client_sock, string message ) {
+  
+  //best handled in network-core?
+
+};
+
+bool GameServer::isConnected() {
+  return _connected;
+};
+
+void GameServer::setPort( int p ) {
+  if ( p )
+    _port = p;
 }
 
-void die() {
-  int fd;
-  signal(SIGINT,SIG_IGN);
-  for (fd = 4; fd < FD_SETSIZE; fd++)
-    if (FD_ISSET(fd, &readfds)) {
-      printf( "closing fd#%d", fd );
-      close( fd );
-    }
-  close( 3 );
-  exit( EXIT_SUCCESS );
+GameServer gs = GameServer();
+
+void sigHandler() {
+  signal( SIGINT, SIG_IGN );
+  gs.die();
 }
+
+int main() {
+  gs.setPort( PORT );
+
+  signal(SIGINT,(__sighandler_t)sigHandler);
+
+  gs.connect();
+
+};
