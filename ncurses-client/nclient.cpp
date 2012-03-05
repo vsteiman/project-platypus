@@ -100,7 +100,7 @@ main() {
               break;
             case 0x63:
             case 0x43:
-              mvprintw( LINES - 2, 1, username.c_str() );
+              mvprintw( LINES - 2, 2, username.c_str() );
               mvprintw( LINES - 2, username.size() + 2, ": " );
               fflush( stdin );
               curs_set(1);

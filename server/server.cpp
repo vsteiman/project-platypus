@@ -73,22 +73,23 @@ void GameServer::handle_client( int sock_num ) {
   if( nread == 0 ) {
     close( sock_num );
     FD_CLR( sock_num, &_readfds);
-    sprintf( _msg, "Client %d disconnected\n", sock_num );
+    sprintf( _msg, "Client %d disconnected", sock_num );
     log( string( _msg ) );
   } else {
     nread = read( sock_num, _msg, nread );
     _msg[ nread ] = '\0';
-    broadcast( sock_num, string( _msg ) );
+    string message = string( _msg );
+    log( message );
+    broadcast( sock_num, message );
   }
 };
 
 void GameServer::handle_new_client() {
   int new_fd;  
-  log( string( "accepting client...\n" ) );
   new_fd = accept( _server_sockfd, NULL, NULL );
   if ( new_fd > 3 ) {
     FD_SET( new_fd, &_readfds );
-    sprintf( _msg,  "client has connected on fd#: %d\n", new_fd );
+    sprintf( _msg,  "client has connected on fd#: %d", new_fd );
     log( string( _msg ) );
     _num_connected++;
   }
@@ -101,7 +102,10 @@ void GameServer::handle_server_stdin() {
     nread = read( STDIN_FILENO, _msg, nread );
     if ( _msg[ 0 ] != '\n' ) {
       _msg[ nread ] = '\0';
-      broadcast( string( _msg ) );
+      string message = string( _msg );
+      message.insert( 0, ": " );
+      message.insert( 0, "Server" );
+      broadcast( message );
     }
   }
 };
@@ -121,30 +125,23 @@ void GameServer::disconnect_client( int client_sock ) {
 
 void GameServer::close_sockets() {
   int fd;
-  char b[10];
-  for ( fd = 4; fd < FD_SETSIZE; fd++ ) {
-    sprintf( b, "%d", fd );
-    log( string( b ) );
-    if ( FD_ISSET( fd, &_readfds ) ) {
+  for ( fd = 4; fd < FD_SETSIZE; fd++ )
+    if ( FD_ISSET( fd, &_readfds ) )
       disconnect_client( fd );
-    }
-  }
 };
 
 bool GameServer::broadcast( int targ_fd, string message ) {
   // will not broadcast to targ_fd (if message originated from targ_fd
   // use broadcast( string ) to send to all
-  if( targ_fd < 0 || message.empty() ) {
+  if( message.empty() )
     return false;
-  }
+
   int fd;
 
-  for ( fd = 4; fd < 4 + _num_connected; fd++ ) {
-    if ( FD_ISSET( fd, &_readfds ) && targ_fd != fd ) {
+  for ( fd = 4; fd < 4 + _num_connected; fd++ )
+    if ( FD_ISSET( fd, &_readfds ) && targ_fd != fd )
       //use network-core here :D
       write(fd, message.c_str(), message.size() );
-    }
-  }
 };
 
 bool GameServer::broadcast( string message ) {
